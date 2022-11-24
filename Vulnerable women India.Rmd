@@ -1,0 +1,108 @@
+---
+title: "India_nutrition"
+output: html_document
+date: "2022-11-23"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#Load libraries
+
+library(tidyverse)
+library(here)
+library(viridis)
+library(sf)
+```
+
+
+```{r}
+
+# Load the dataset
+
+df <- read.csv("india_state_level_numbers_2020_to_2030.csv")
+
+glimpse(df)
+```
+
+```{r}
+df
+```
+
+```{r}
+#Read shape file
+
+
+shape_india <- read_sf("ind_state_level.shp")
+
+shape_india
+
+```
+
+
+```{r}
+# Filter for women aged 15-45 years earning less than 11USD  for 2022
+
+data_india2022 <- df %>% 
+    filter(age_group %in% c("[15,20)", "[20,25)", "	[25,30)", "[30,35)", "	[35,40)", "[40,45)") & gender == 2 & spending_group == "[0,11)" & year == 2022) %>% 
+    group_by(state_name) %>% 
+    summarise(Vulnerablegroup = sum(population)) %>% 
+    mutate(percentvulnerable = Vulnerablegroup/ sum(Vulnerablegroup) * 100)
+
+data_india2022
+
+```
+```{r}
+# Plot heat map
+
+my_path <- "\\Users\\Linda Karani\\Documents\\gitrepo\\Fertility-rates-India"
+options(scipen=999, digits = 2)
+
+
+spatialdataind <- merge(shape_india, data_india2022, by = "state_name")
+
+
+spatialdataind %>%
+  ggplot() + 
+  geom_sf(mapping = aes(fill = Vulnerablegroup), show.legend = TRUE) +
+  coord_sf()+
+  scale_fill_viridis_c(option = "A") + labs(title = "Total population of vulnerable child bearing women in 2022")
+  
+ggsave("Total population of child bearing women in 2022.png", path = my_path, width = 6, height = 4.5)
+```
+```{r}
+# Plot heatmap showing percentage
+
+spatialdataind %>%
+    ggplot() + 
+    geom_sf(mapping = aes(fill = percentvulnerable), show.legend = TRUE) +
+    coord_sf()+
+    scale_fill_viridis_c(option = "A") + labs(title = "Percentage of vulnerable child bearing women in 2022")
+  
+ggsave("Percentage of child bearing women in 2022.png", path = my_path, width = 6, height = 4.5)
+
+```
+
+
+
+
+```{r}
+# Filter for women aged 15-45 years earning less than 11USD  for 2030
+
+data_india2030 <- df %>% 
+    filter(age_group %in% c("[15,20)", "[20,25)", "	[25,30)", "[30,35)", "	[35,40)", "[40,45)") & gender == 2 & spending_group == "[0,11)" & year == 2030) %>% 
+    group_by(state_name) %>% 
+    summarise(Vulnerablegroup = sum(population)) %>% 
+    mutate(percentvulnerable = Vulnerablegroup/ sum(Vulnerablegroup) * 100)
+
+data_india2030
+```
+
+
+```{r}
+
+# Plot heat map
+
+
