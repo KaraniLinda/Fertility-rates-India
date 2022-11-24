@@ -19,8 +19,26 @@ library(sf)
 
 
 ```{r}
+#Load the subnational dataset for pakistan and Ethiopia
 
-# Load the dataset
+library(readxl)
+datapaketh <- read_excel("20221124_wdp_data.xlsx", sheet = 2)
+
+datapaketh
+```
+```{r}
+#Filter relevant columns
+
+datapaketh %>% 
+    filter(`Age Group` %in% c("15-30", "30-45") & Gender == "female" & Year == 2022 & `Daily Spending Bracket` %in% c("$0-2", "$2-5", "$5-8", "$8-12")) %>% 
+    group_by(`Country / Region`, Year) %>% 
+    summarise(Totpop = sum(Population))
+```
+
+
+```{r}
+
+# Load the subnational dataset for india
 
 df <- read.csv("india_state_level_numbers_2020_to_2030.csv")
 
@@ -28,7 +46,10 @@ glimpse(df)
 ```
 
 ```{r}
-df
+df %>% 
+     filter(age_group %in% c("[15,20)", "[20,25)", "[25,30)", "[30,35)", "	[35,40)", "[40,45)") & gender == 2 & year == 2022 & spending_group == "[0,11)")  %>% 
+    summarize(count = sum(population))
+    
 ```
 
 ```{r}
@@ -100,9 +121,43 @@ data_india2030 <- df %>%
 data_india2030
 ```
 
-
 ```{r}
-
 # Plot heat map
 
+my_path <- "\\Users\\Linda Karani\\Documents\\gitrepo\\Fertility-rates-India"
+options(scipen=999, digits = 2)
+
+
+spatialdataind <- merge(shape_india, data_india2030, by = "state_name")
+
+
+spatialdataind %>%
+  ggplot() + 
+  geom_sf(mapping = aes(fill = Vulnerablegroup), show.legend = TRUE) +
+  coord_sf()+
+  scale_fill_viridis_c(option = "A") + labs(title = "Total population of vulnerable child bearing women in 2030")
+  
+ggsave("Total population of child bearing women in 2030.png", path = my_path, width = 6, height = 4.5)
+
+```
+
+
+
+
+
+```{r}
+spatialdataind %>%
+    ggplot() + 
+    geom_sf(mapping = aes(fill = percentvulnerable), show.legend = TRUE) +
+    coord_sf()+
+    scale_fill_viridis_c(option = "A") + labs(title = "Percentage of vulnerable child bearing women in 2030")
+  
+ggsave("Percentage of child bearing women in 2030.png", path = my_path, width = 6, height = 4.5)
+
+```
+```{r}
+#Compare India, Ethiopia and Pakistan – is percentage increase in vulnerable pregnant/lactacting women from 2022 to 2030 similar? (Or just child-bearing age women if fertility rates are not available for 2030)
+
+
+```
 
