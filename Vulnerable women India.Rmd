@@ -22,15 +22,15 @@ library(sf)
 #Load the subnational dataset for pakistan and Ethiopia
 
 library(readxl)
-datapaketh <- read_excel("20221124_wdp_data.xlsx", sheet = 2)
+datapakethind <- read_excel("20221125_wdp_data.xlsx", sheet = 2)
 
-datapaketh
+datapakethind
 ```
 ```{r}
 #Filter relevant columns
 
-datapaketh %>% 
-    filter(`Age Group` %in% c("15-30", "30-45") & Gender == "female" & Year == 2022 & `Daily Spending Bracket` %in% c("$0-2", "$2-5", "$5-8", "$8-12")) %>% 
+datapakethind %>% 
+    filter(`Age Group` %in% c("15-30", "30-45") & Gender == "female" & Year %in% c(2022, 2030) & `Daily Spending Bracket` %in% c("$0-2", "$2-5", "$5-8", "$8-12")) %>% 
     group_by(`Country / Region`, Year) %>% 
     summarise(Totpop = sum(Population))
 ```
@@ -47,10 +47,43 @@ glimpse(df)
 
 ```{r}
 df %>% 
-     filter(age_group %in% c("[15,20)", "[20,25)", "[25,30)", "[30,35)", "	[35,40)", "[40,45)") & gender == 2 & year == 2022 & spending_group == "[0,11)")  %>% 
+     filter(age_group %in% c("[15,20)", "[20,25)", "[25,30)", "[30,35)", "	[35,40)", "[40,45)") & gender == 2 & year == 2030 & spending_group == "[0,11)")  %>% 
     summarize(count = sum(population))
     
 ```
+```{r}
+#Scale 2022 data 
+
+df2022scaled <- df %>% 
+    group_by(state_name, gender, age_group,year, spending_group) %>% 
+    filter(age_group %in% c("[15,20)", "[20,25)", "[25,30)", "[30,35)", "	[35,40)", "[40,45)") & gender == 2 & year == 2022 & spending_group == "[0,11)")  %>% 
+    summarise(Totpop = sum(population)) %>% 
+    mutate(Totadjpop = Totpop * 1.1167499) %>% 
+    ungroup()
+
+```
+```{r}
+#Scale 2030 data
+
+df2030scaled <- df %>% 
+    group_by(state_name, gender, age_group,year, spending_group) %>% 
+    filter(age_group %in% c("[15,20)", "[20,25)", "[25,30)", "[30,35)", "	[35,40)", "[40,45)") & gender == 2 & year == 2030 & spending_group == "[0,11)")  %>% 
+    summarise(Totpop = sum(population)) %>% 
+    mutate(Totadjpop = Totpop * 1.16585) %>% 
+    ungroup()
+
+df2030scaled
+```
+
+
+```{r}
+
+#Check
+df2030scaled %>% 
+    filter(age_group %in% c("[15,20)", "[20,25)", "[25,30)", "[30,35)", "	[35,40)", "[40,45)") & gender == 2 & year == 2030 & spending_group == "[0,11)")  %>% 
+    summarise(sum = sum(Totadjpop))
+```
+
 
 ```{r}
 #Read shape file
@@ -66,11 +99,11 @@ shape_india
 ```{r}
 # Filter for women aged 15-45 years earning less than 11USD  for 2022
 
-data_india2022 <- df %>% 
-    filter(age_group %in% c("[15,20)", "[20,25)", "	[25,30)", "[30,35)", "	[35,40)", "[40,45)") & gender == 2 & spending_group == "[0,11)" & year == 2022) %>% 
+data_india2022 <- df2022scaled %>% 
     group_by(state_name) %>% 
-    summarise(Vulnerablegroup = sum(population)) %>% 
-    mutate(percentvulnerable = Vulnerablegroup/ sum(Vulnerablegroup) * 100)
+    summarise(Vulnerablegroup = sum(Totadjpop)) %>% 
+    mutate(percentvulnerable = Vulnerablegroup/ sum(Vulnerablegroup) * 100) %>% 
+    ungroup()
 
 data_india2022
 
@@ -82,10 +115,10 @@ my_path <- "\\Users\\Linda Karani\\Documents\\gitrepo\\Fertility-rates-India"
 options(scipen=999, digits = 2)
 
 
-spatialdataind <- merge(shape_india, data_india2022, by = "state_name")
+spatialdataind2022 <- merge(shape_india, data_india2022, by = "state_name")
 
 
-spatialdataind %>%
+spatialdataind2022 %>%
   ggplot() + 
   geom_sf(mapping = aes(fill = Vulnerablegroup), show.legend = TRUE) +
   coord_sf()+
@@ -96,7 +129,7 @@ ggsave("Total population of child bearing women in 2022.png", path = my_path, wi
 ```{r}
 # Plot heatmap showing percentage
 
-spatialdataind %>%
+spatialdataind2022 %>%
     ggplot() + 
     geom_sf(mapping = aes(fill = percentvulnerable), show.legend = TRUE) +
     coord_sf()+
@@ -112,11 +145,11 @@ ggsave("Percentage of child bearing women in 2022.png", path = my_path, width = 
 ```{r}
 # Filter for women aged 15-45 years earning less than 11USD  for 2030
 
-data_india2030 <- df %>% 
-    filter(age_group %in% c("[15,20)", "[20,25)", "	[25,30)", "[30,35)", "	[35,40)", "[40,45)") & gender == 2 & spending_group == "[0,11)" & year == 2030) %>% 
+data_india2030 <- df2030scaled %>% 
     group_by(state_name) %>% 
-    summarise(Vulnerablegroup = sum(population)) %>% 
-    mutate(percentvulnerable = Vulnerablegroup/ sum(Vulnerablegroup) * 100)
+    summarise(Vulnerablegroup = sum(Totadjpop)) %>% 
+    mutate(percentvulnerable = Vulnerablegroup/ sum(Vulnerablegroup) * 100) %>% 
+    ungroup()
 
 data_india2030
 ```
@@ -128,10 +161,10 @@ my_path <- "\\Users\\Linda Karani\\Documents\\gitrepo\\Fertility-rates-India"
 options(scipen=999, digits = 2)
 
 
-spatialdataind <- merge(shape_india, data_india2030, by = "state_name")
+spatialdataind2030 <- merge(shape_india, data_india2030, by = "state_name")
 
 
-spatialdataind %>%
+spatialdataind2030 %>%
   ggplot() + 
   geom_sf(mapping = aes(fill = Vulnerablegroup), show.legend = TRUE) +
   coord_sf()+
@@ -146,7 +179,7 @@ ggsave("Total population of child bearing women in 2030.png", path = my_path, wi
 
 
 ```{r}
-spatialdataind %>%
+spatialdataind2030 %>%
     ggplot() + 
     geom_sf(mapping = aes(fill = percentvulnerable), show.legend = TRUE) +
     coord_sf()+
@@ -158,6 +191,24 @@ ggsave("Percentage of child bearing women in 2030.png", path = my_path, width = 
 ```{r}
 #Compare India, Ethiopia and Pakistan – is percentage increase in vulnerable pregnant/lactacting women from 2022 to 2030 similar? (Or just child-bearing age women if fertility rates are not available for 2030)
 
+datapakethind_plot <- datapakethind %>% 
+    filter(`Age Group` %in% c("15-30", "30-45") & Gender == "female" & Year %in% c(2022, 2030) & `Daily Spending Bracket` %in% c("$0-2", "$2-5", "$5-8", "$8-12")) %>% 
+    group_by(`Country / Region`, Year) %>% 
+    summarise(Totpop = sum(Population)) %>% 
+    ungroup()
 
+datapakethind_plot
+
+```
+
+
+```{r}
+datapakethind_plot %>%
+    ggplot(aes(x = reorder(`Country / Region`, -Totpop),
+               y = Totpop,
+               fill = as.factor(Year))) +
+    geom_bar(stat = "identity")
+    
+    
 ```
 
