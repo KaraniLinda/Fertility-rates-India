@@ -198,9 +198,81 @@ datapakethind_plot <- datapakethind %>%
     summarise(Totpop = sum(Population)) %>% 
     ungroup()
 
-datapakethind_plot
+datapakethind_plot %>% 
+    write_csv( "datapakindplot_comparison.csv")
 
 ```
+
+```{r}
+#How many of these women are pregnant or lactating (try to calculate using fertility rate), and how many of these are vulnerable (calculate total number, income group 0-11USD)
+
+data_all <- datapakethind %>% 
+    filter(`Age Group` %in% c("15-30", "30-45") & Gender == "female" & Year %in% c(2022, 2030) & `Daily Spending Bracket` == "ALL" )%>% 
+    group_by(`Country / Region`, Year) %>% 
+    summarise(Totpop = sum(Population)) %>% 
+    ungroup()
+
+
+data_vulnerable <- datapakethind %>% 
+    filter(`Age Group` %in% c("15-30", "30-45") & Gender == "female" & Year %in% c(2022, 2030) & `Daily Spending Bracket` %in% c("$0-2", "$2-5", "$5-8", "$8-12"))%>% 
+    group_by(`Country / Region`, Year) %>% 
+    summarise(Totvulnerable = sum(Population)) %>% 
+    ungroup()
+
+data_join <- data_all %>% 
+    left_join(data_vulnerable, by = c("Country / Region" = "Country / Region", "Year" = "Year")) %>% 
+    filter(Year == 2022) %>% 
+    pivot_longer(cols = c("Totpop", "Totvulnerable"), names_to = "Population", values_to = "Value")
+
+```
+
+```{r}
+#Plot Ethiopia
+
+data_join %>% 
+    filter(`Country / Region` == "Ethiopia") %>% 
+     ggplot(aes(x = reorder(`Country / Region`, -Value),
+               y = Value,
+               fill = as.factor(Population))
+           ) +
+    geom_col(position = "dodge") +
+    geom_text(aes(label = round(Value)) , vjust = -0.2, size = 3, position = position_dodge(.9) ) +
+    theme_bw()+
+    labs(title = "Comparison of total child bearing women vs Vulnerable women in Ethiopia", fill = "Year") + xlab("Country") + ylab("Total population/Vulnerable of women aged 15-45")  +
+    scale_fill_manual(values = c("#004561", "#5891ad"))+
+    theme(axis.text = element_text(size = 9),
+          axis.title = element_text(size = 9),
+          legend.text = element_text(size = 9))
+
+ggsave("Comparison of total child bearing women vs Vulnerable women in Ethiopia.png", path = my_path, width = 8, height = 4.5)
+    
+
+```
+```{r}
+#Plot India
+
+data_join %>% 
+    filter(`Country / Region` == "India") %>% 
+     ggplot(aes(x = reorder(`Country / Region`, -Value),
+               y = Value,
+               fill = as.factor(Population))
+           ) +
+    geom_col(position = "dodge") +
+    geom_text(aes(label = round(Value)) , vjust = -0.2, size = 3, position = position_dodge(.9) ) +
+    theme_bw()+
+    labs(title = "Comparison of total child bearing women vs Vulnerable women in India", fill = "Year") + xlab("Country") + ylab("Total population/Vulnerable of women aged 15-45")  +
+    scale_fill_manual(values = c("#004561", "#5891ad"))+
+    theme(axis.text = element_text(size = 9),
+          axis.title = element_text(size = 9),
+          legend.text = element_text(size = 9))
+
+ggsave("Comparison of total child bearing women vs Vulnerable women in India.png", path = my_path, width = 8, height = 4.5)
+    
+
+```
+
+
+
 ```{r}
 # Compute growth rate from 2022 to 2030
 
@@ -215,6 +287,8 @@ dataperc
 
 
 ```{r}
+
+options(scipen=999, digits = 2)
 dataperc%>%
     ggplot(aes(x = reorder(`Country / Region`, -value),
                y = value,
@@ -223,7 +297,7 @@ dataperc%>%
     geom_col(position = "dodge") +
     geom_text(aes(label = round(value)) , vjust = -0.2, size = 3, position = position_dodge(.9) ) +
     theme_bw()+
-    labs(title = "Comparison of child bearing women in India, Ethiopia and Pakistan", fill = "Year") + xlab("Country") + ylab("Total population of women aged 15-45")  +
+    labs(title = "Vulnerable child bearing women in India, Ethiopia and Pakistan", fill = "Year") + xlab("Country") + ylab("Total population of vulnerable women aged 15-45")  +
     scale_fill_manual(values = c("#004561", "#5891ad"))+
     theme(axis.text = element_text(size = 9),
           axis.title = element_text(size = 9),
